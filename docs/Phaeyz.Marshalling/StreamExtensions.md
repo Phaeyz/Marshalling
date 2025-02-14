@@ -1,0 +1,59 @@
+# StreamExtensions class
+
+Utility methods for reading and writing intrinsic values from a stream.
+
+```csharp
+public static class StreamExtensions
+```
+
+## Public Members
+
+| name | description |
+| --- | --- |
+| static [ReadDouble](StreamExtensions/ReadDouble.md)(…) | Reads a 64-bit floating-point value from the stream. |
+| static [ReadDoubleAsync](StreamExtensions/ReadDoubleAsync.md)(…) | Reads a 64-bit floating-point value from the stream. |
+| static [ReadInt16](StreamExtensions/ReadInt16.md)(…) | Reads a signed 16-bit value from the stream. |
+| static [ReadInt16Async](StreamExtensions/ReadInt16Async.md)(…) | Reads a signed 16-bit value from the stream. |
+| static [ReadInt32](StreamExtensions/ReadInt32.md)(…) | Reads an signed 32-bit value from the stream. |
+| static [ReadInt32Async](StreamExtensions/ReadInt32Async.md)(…) | Reads an signed 32-bit value from the stream. |
+| static [ReadInt64](StreamExtensions/ReadInt64.md)(…) | Reads a signed 64-bit value from the stream. |
+| static [ReadInt64Async](StreamExtensions/ReadInt64Async.md)(…) | Reads a signed 64-bit value from the stream. |
+| static [ReadInt8](StreamExtensions/ReadInt8.md)(…) | Reads a signed 8-bit value from the stream. |
+| static [ReadInt8Async](StreamExtensions/ReadInt8Async.md)(…) | Reads a signed 8-bit value from the stream. |
+| static [ReadSingle](StreamExtensions/ReadSingle.md)(…) | Reads a 32-bit floating-point value from the stream. |
+| static [ReadSingleAsync](StreamExtensions/ReadSingleAsync.md)(…) | Reads a 32-bit floating-point value from the stream. |
+| static [ReadUInt16](StreamExtensions/ReadUInt16.md)(…) | Reads an unsigned 16-bit value from the stream. |
+| static [ReadUInt16Async](StreamExtensions/ReadUInt16Async.md)(…) | Reads an unsigned 16-bit value from the stream. |
+| static [ReadUInt32](StreamExtensions/ReadUInt32.md)(…) | Reads an unsigned 32-bit value from the stream. |
+| static [ReadUInt32Async](StreamExtensions/ReadUInt32Async.md)(…) | Reads an unsigned 32-bit value from the stream. |
+| static [ReadUInt64](StreamExtensions/ReadUInt64.md)(…) | Reads an unsigned 64-bit value from the stream. |
+| static [ReadUInt64Async](StreamExtensions/ReadUInt64Async.md)(…) | Reads an unsigned 64-bit value from the stream. |
+| static [ReadUInt8](StreamExtensions/ReadUInt8.md)(…) | Reads an unsigned 8-bit value from the stream. |
+| static [ReadUInt8Async](StreamExtensions/ReadUInt8Async.md)(…) | Reads an unsigned 8-bit value from the stream. |
+| static [WriteDouble](StreamExtensions/WriteDouble.md)(…) | Writes a 64-bit floating-point value to the stream. |
+| static [WriteDoubleAsync](StreamExtensions/WriteDoubleAsync.md)(…) | Writes a 64-bit floating-point value to the stream. |
+| static [WriteInt16](StreamExtensions/WriteInt16.md)(…) | Writes a signed 16-bit value to the stream. |
+| static [WriteInt16Async](StreamExtensions/WriteInt16Async.md)(…) | Writes a signed 16-bit value to the stream. |
+| static [WriteInt32](StreamExtensions/WriteInt32.md)(…) | Writes a signed 32-bit value to the stream. |
+| static [WriteInt32Async](StreamExtensions/WriteInt32Async.md)(…) | Writes a signed 32-bit value to the stream. |
+| static [WriteInt64](StreamExtensions/WriteInt64.md)(…) | Writes a signed 64-bit value to the stream. |
+| static [WriteInt64Async](StreamExtensions/WriteInt64Async.md)(…) | Writes a signed 64-bit value to the stream. |
+| static [WriteInt8](StreamExtensions/WriteInt8.md)(…) | Writes a signed 8-bit value to the stream. |
+| static [WriteInt8Async](StreamExtensions/WriteInt8Async.md)(…) | Writes a signed 8-bit value to the stream. |
+| static [WriteSingle](StreamExtensions/WriteSingle.md)(…) | Writes a 32-bit floating-point value to the stream. |
+| static [WriteSingleAsync](StreamExtensions/WriteSingleAsync.md)(…) | Writes a 32-bit floating-point value to the stream. |
+| static [WriteUInt16](StreamExtensions/WriteUInt16.md)(…) | Writes an unsigned 16-bit value to the stream. |
+| static [WriteUInt16Async](StreamExtensions/WriteUInt16Async.md)(…) | Writes an unsigned 16-bit value to the stream. |
+| static [WriteUInt32](StreamExtensions/WriteUInt32.md)(…) | Writes an unsigned 32-bit value to the stream. |
+| static [WriteUInt32Async](StreamExtensions/WriteUInt32Async.md)(…) | Writes an unsigned 32-bit value to the stream. |
+| static [WriteUInt64](StreamExtensions/WriteUInt64.md)(…) | Writes an unsigned 64-bit value to the stream. |
+| static [WriteUInt64Async](StreamExtensions/WriteUInt64Async.md)(…) | Writes an unsigned 64-bit value to the stream. |
+| static [WriteUInt8](StreamExtensions/WriteUInt8.md)(…) | Writes an unsigned 8-bit value to the stream. |
+| static [WriteUInt8Async](StreamExtensions/WriteUInt8Async.md)(…) | Writes an unsigned 8-bit value to the stream. |
+
+## See Also
+
+* namespace [Phaeyz.Marshalling](../Phaeyz.Marshalling.md)
+* [StreamExtensions.cs](https://github.com/Phaeyz/Marshalling/blob/main/Phaeyz.Marshalling/StreamExtensions.cs)
+
+<!-- DO NOT EDIT: generated by xmldocmd for Phaeyz.Marshalling.dll -->
