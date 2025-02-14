@@ -1,5 +1,7 @@
 # ByteCountingStream.CanWrite property
 
+Gets a value indicating whether the current stream supports writing. Always returns `true`.
+
 ```csharp
 public override bool CanWrite { get; }
 ```

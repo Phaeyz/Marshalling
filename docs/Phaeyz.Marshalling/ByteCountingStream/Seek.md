@@ -1,8 +1,25 @@
 # ByteCountingStream.Seek method
 
+Sets the position within the current stream. Currently this method always throws an exception as the stream is not seekable.
+
 ```csharp
 public override long Seek(long offset, SeekOrigin origin)
 ```
+
+| parameter | description |
+| --- | --- |
+| offset | A byte offset relative to the *origin* parameter. |
+| origin | A value of type SeekOrigin indicating the reference point used to obtain the new position. |
+
+## Return Value
+
+The new position within the current stream.
+
+## Exceptions
+
+| exception | condition |
+| --- | --- |
+| NotSupportedException | The stream is not seekable. |
 
 ## See Also
 

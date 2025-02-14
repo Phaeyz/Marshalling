@@ -51,26 +51,74 @@ public readonly struct MarshalStreamReadStringResult(
     /// </remarks>
     public bool IsEndOfStream { get; } = isEndOfStream;
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Determines whether two object instances are equal.
+    /// </summary>
+    /// <param name="other">
+    /// The object to compare with the current object.
+    /// </param>
+    /// <returns>
+    /// <c>true</c>> if the specified object is equal to the current object; otherwise, <c>false</c>.
+    /// </returns>
     public bool Equals(MarshalStreamReadStringResult other) =>
         Value == other.Value && BytesRead == other.BytesRead &&
         IsEndedDueToNullTerminator == other.IsEndedDueToNullTerminator && IsEndOfStream == other.IsEndOfStream;
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Determines whether two object instances are equal.
+    /// </summary>
+    /// <param name="obj">
+    /// The object to compare with the current object.
+    /// </param>
+    /// <returns>
+    /// <c>true</c>> if the specified object is equal to the current object; otherwise, <c>false</c>.
+    /// </returns>
     public override bool Equals(object? obj) =>
         obj is MarshalStreamReadStringResult other && Equals(other);
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Computes a hash code for the current instance.
+    /// </summary>
+    /// <returns>
+    /// A hash code for the current instance.
+    /// </returns>
     public override int GetHashCode() =>
         HashCode.Combine(Value, BytesRead, IsEndedDueToNullTerminator, IsEndOfStream);
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Creates a friendly string for the current instance.
+    /// </summary>
+    /// <returns>
+    /// A friendly string for the current instance.
+    /// </returns>
     public override string ToString() =>
         $"{{ Value = {Value}, ReadByteCount = {BytesRead}, IsEndedDueToNullTerminator = {IsEndedDueToNullTerminator}, IsEndOfStream = {IsEndOfStream} }}";
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Determines if the two objects are equal.
+    /// </summary>
+    /// <param name="left">
+    /// The first object to compare.
+    /// </param>
+    /// <param name="right">
+    /// The second object to compare.
+    /// </param>
+    /// <returns>
+    /// <c>true</c>> if the first object is equal to the second object; otherwise, <c>false</c>.
+    /// </returns>
     public static bool operator ==(MarshalStreamReadStringResult left, MarshalStreamReadStringResult right) => left.Equals(right);
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Determines if the two objects are not equal.
+    /// </summary>
+    /// <param name="left">
+    /// The first object to compare.
+    /// </param>
+    /// <param name="right">
+    /// The second object to compare.
+    /// </param>
+    /// <returns>
+    /// <c>true</c>> if the first object is not equal to the second object; otherwise, <c>false</c>.
+    /// </returns>
     public static bool operator !=(MarshalStreamReadStringResult left, MarshalStreamReadStringResult right) => !left.Equals(right);
 }

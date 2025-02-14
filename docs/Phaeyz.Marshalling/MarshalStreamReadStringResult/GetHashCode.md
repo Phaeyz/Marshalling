@@ -1,8 +1,14 @@
 # MarshalStreamReadStringResult.GetHashCode method
 
+Computes a hash code for the current instance.
+
 ```csharp
 public override int GetHashCode()
 ```
+
+## Return Value
+
+A hash code for the current instance.
 
 ## See Also
 

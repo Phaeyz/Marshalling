@@ -1,5 +1,7 @@
 # ByteCountingStream.Flush method
 
+Clears all buffers for this stream and causes any buffered data to be written to the underlying device. This method is a no-op as there is no buffering.
+
 ```csharp
 public override void Flush()
 ```

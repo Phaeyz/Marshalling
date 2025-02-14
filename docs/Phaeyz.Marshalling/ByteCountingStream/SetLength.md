@@ -1,8 +1,20 @@
 # ByteCountingStream.SetLength method
 
+Sets the length of the current stream. Currently this method always throws an exception as the stream is not seekable.
+
 ```csharp
 public override void SetLength(long value)
 ```
+
+| parameter | description |
+| --- | --- |
+| value | The desired length of the current stream in bytes. |
+
+## Exceptions
+
+| exception | condition |
+| --- | --- |
+| NotSupportedException | The stream is not seekable. |
 
 ## See Also
 

@@ -22,12 +22,12 @@ public struct MarshalStreamReadStringResult : IEquatable<MarshalStreamReadString
 | [IsEndedDueToNullTerminator](MarshalStreamReadStringResult/IsEndedDueToNullTerminator.md) { get; } | Indicates whether or not a null terminator was encountered while reading from the stream which caused reading to stop. This may only be `true` is the read operation was requested to stop on null terminators. |
 | [IsEndOfStream](MarshalStreamReadStringResult/IsEndOfStream.md) { get; } | Indicates whether or not the end of the stream was reached while reading from the stream. |
 | [Value](MarshalStreamReadStringResult/Value.md) { get; } | The string value which has been read. |
-| [Equals](MarshalStreamReadStringResult/Equals.md)(…) |  |
-| override [Equals](MarshalStreamReadStringResult/Equals.md)(…) |  |
-| override [GetHashCode](MarshalStreamReadStringResult/GetHashCode.md)() |  |
-| override [ToString](MarshalStreamReadStringResult/ToString.md)() |  |
-| [operator ==](MarshalStreamReadStringResult/op_Equality.md) |  |
-| [operator !=](MarshalStreamReadStringResult/op_Inequality.md) |  |
+| [Equals](MarshalStreamReadStringResult/Equals.md)(…) | Determines whether two object instances are equal. |
+| override [Equals](MarshalStreamReadStringResult/Equals.md)(…) | Determines whether two object instances are equal. |
+| override [GetHashCode](MarshalStreamReadStringResult/GetHashCode.md)() | Computes a hash code for the current instance. |
+| override [ToString](MarshalStreamReadStringResult/ToString.md)() | Creates a friendly string for the current instance. |
+| [operator ==](MarshalStreamReadStringResult/op_Equality.md) | Determines if the two objects are equal. |
+| [operator !=](MarshalStreamReadStringResult/op_Inequality.md) | Determines if the two objects are not equal. |
 
 ## See Also
 
