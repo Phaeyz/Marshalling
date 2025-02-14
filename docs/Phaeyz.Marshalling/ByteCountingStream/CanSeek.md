@@ -1,5 +1,7 @@
 # ByteCountingStream.CanSeek property
 
+Gets a value indicating whether the current stream supports seeking. Always returns `false`.
+
 ```csharp
 public override bool CanSeek { get; }
 ```

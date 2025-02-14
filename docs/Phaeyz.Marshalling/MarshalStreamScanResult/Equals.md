@@ -1,8 +1,18 @@
 # MarshalStreamScanResult.Equals method (1 of 2)
 
+Determines whether two object instances are equal.
+
 ```csharp
 public bool Equals(MarshalStreamScanResult other)
 ```
+
+| parameter | description |
+| --- | --- |
+| other | The object to compare with the current object. |
+
+## Return Value
+
+`true`&gt; if the specified object is equal to the current object; otherwise, `false`.
 
 ## See Also
 
@@ -13,9 +23,19 @@ public bool Equals(MarshalStreamScanResult other)
 
 # MarshalStreamScanResult.Equals method (2 of 2)
 
+Determines whether two object instances are equal.
+
 ```csharp
 public override bool Equals(object? obj)
 ```
+
+| parameter | description |
+| --- | --- |
+| obj | The object to compare with the current object. |
+
+## Return Value
+
+`true`&gt; if the specified object is equal to the current object; otherwise, `false`.
 
 ## See Also
 

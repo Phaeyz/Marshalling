@@ -1,5 +1,7 @@
 # ByteCountingStream.CanRead property
 
+Gets a value indicating whether the current stream supports reading. Always returns `false`.
+
 ```csharp
 public override bool CanRead { get; }
 ```

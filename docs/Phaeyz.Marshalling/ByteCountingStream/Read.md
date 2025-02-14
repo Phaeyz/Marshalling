@@ -1,8 +1,26 @@
 # ByteCountingStream.Read method
 
+Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read. Currently this method always throws an exception as the stream is not readable.
+
 ```csharp
 public override int Read(byte[] buffer, int offset, int count)
 ```
+
+| parameter | description |
+| --- | --- |
+| buffer | An array of bytes. When this method returns, the buffer contains the specified byte array with the values between *offset* and (*offset* + *count* - 1) replaced by the bytes read from the current source. |
+| offset | The zero-based byte offset in *buffer* at which to begin storing the data read from the current stream. |
+| count | The maximum number of bytes to be read from the current stream. |
+
+## Return Value
+
+The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or zero (0) if *count* is 0 or the end of the stream has been reached.
+
+## Exceptions
+
+| exception | condition |
+| --- | --- |
+| NotSupportedException | The stream is not readable. |
 
 ## See Also
 

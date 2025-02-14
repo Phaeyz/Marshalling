@@ -1,8 +1,16 @@
 # ByteCountingStream.Position property
 
+Always throws an exception as the stream does not support seeking.
+
 ```csharp
 public override long Position { get; set; }
 ```
+
+## Exceptions
+
+| exception | condition |
+| --- | --- |
+| NotSupportedException | The stream is not seekable. |
 
 ## See Also
 

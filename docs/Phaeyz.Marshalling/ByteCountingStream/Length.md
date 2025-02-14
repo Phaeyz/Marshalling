@@ -1,8 +1,16 @@
 # ByteCountingStream.Length property
 
+Always throws an exception as the stream does not support seeking and the length is unknown.
+
 ```csharp
 public override long Length { get; }
 ```
+
+## Exceptions
+
+| exception | condition |
+| --- | --- |
+| NotSupportedException | The stream is not seekable. |
 
 ## See Also
 

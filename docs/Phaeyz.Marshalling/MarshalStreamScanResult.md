@@ -20,12 +20,12 @@ public struct MarshalStreamScanResult : IEquatable<MarshalStreamScanResult>
 | [BytesRead](MarshalStreamScanResult/BytesRead.md) { get; } | The total number of bytes read during the scan operation. |
 | [IsEndOfStream](MarshalStreamScanResult/IsEndOfStream.md) { get; } | Returns `true` if the end of the stream was reached during scanning, `false` otherwise. |
 | [IsPositiveMatch](MarshalStreamScanResult/IsPositiveMatch.md) { get; } | Returns `true` if the scan found a successful match, `false` otherwise. |
-| [Equals](MarshalStreamScanResult/Equals.md)(…) |  |
-| override [Equals](MarshalStreamScanResult/Equals.md)(…) |  |
-| override [GetHashCode](MarshalStreamScanResult/GetHashCode.md)() |  |
-| override [ToString](MarshalStreamScanResult/ToString.md)() |  |
-| [operator ==](MarshalStreamScanResult/op_Equality.md) |  |
-| [operator !=](MarshalStreamScanResult/op_Inequality.md) |  |
+| [Equals](MarshalStreamScanResult/Equals.md)(…) | Determines whether two object instances are equal. |
+| override [Equals](MarshalStreamScanResult/Equals.md)(…) | Determines whether two object instances are equal. |
+| override [GetHashCode](MarshalStreamScanResult/GetHashCode.md)() | Computes a hash code for the current instance. |
+| override [ToString](MarshalStreamScanResult/ToString.md)() | Creates a friendly string for the current instance. |
+| [operator ==](MarshalStreamScanResult/op_Equality.md) | Determines if the two objects are equal. |
+| [operator !=](MarshalStreamScanResult/op_Inequality.md) | Determines if the two objects are not equal. |
 
 ## See Also
 

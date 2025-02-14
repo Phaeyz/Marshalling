@@ -12,16 +12,16 @@ public class ByteCountingStream : Stream
 | --- | --- |
 | [ByteCountingStream](ByteCountingStream/ByteCountingStream.md)() | The default constructor. |
 | [BytesWritten](ByteCountingStream/BytesWritten.md) { get; } | The total number of bytes written to the stream. |
-| override [CanRead](ByteCountingStream/CanRead.md) { get; } |  |
-| override [CanSeek](ByteCountingStream/CanSeek.md) { get; } |  |
-| override [CanWrite](ByteCountingStream/CanWrite.md) { get; } |  |
-| override [Length](ByteCountingStream/Length.md) { get; } |  |
-| override [Position](ByteCountingStream/Position.md) { get; set; } |  |
-| override [Flush](ByteCountingStream/Flush.md)() |  |
-| override [Read](ByteCountingStream/Read.md)(…) |  |
-| override [Seek](ByteCountingStream/Seek.md)(…) |  |
-| override [SetLength](ByteCountingStream/SetLength.md)(…) |  |
-| override [Write](ByteCountingStream/Write.md)(…) |  |
+| override [CanRead](ByteCountingStream/CanRead.md) { get; } | Gets a value indicating whether the current stream supports reading. Always returns `false`. |
+| override [CanSeek](ByteCountingStream/CanSeek.md) { get; } | Gets a value indicating whether the current stream supports seeking. Always returns `false`. |
+| override [CanWrite](ByteCountingStream/CanWrite.md) { get; } | Gets a value indicating whether the current stream supports writing. Always returns `true`. |
+| override [Length](ByteCountingStream/Length.md) { get; } | Always throws an exception as the stream does not support seeking and the length is unknown. |
+| override [Position](ByteCountingStream/Position.md) { get; set; } | Always throws an exception as the stream does not support seeking. |
+| override [Flush](ByteCountingStream/Flush.md)() | Clears all buffers for this stream and causes any buffered data to be written to the underlying device. This method is a no-op as there is no buffering. |
+| override [Read](ByteCountingStream/Read.md)(…) | Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read. Currently this method always throws an exception as the stream is not readable. |
+| override [Seek](ByteCountingStream/Seek.md)(…) | Sets the position within the current stream. Currently this method always throws an exception as the stream is not seekable. |
+| override [SetLength](ByteCountingStream/SetLength.md)(…) | Sets the length of the current stream. Currently this method always throws an exception as the stream is not seekable. |
+| override [Write](ByteCountingStream/Write.md)(…) | Increments the [`BytesWritten`](./ByteCountingStream/BytesWritten.md) property by the count of bytes requested to be written. |
 
 ## See Also
 

@@ -1,8 +1,14 @@
 # MarshalStreamScanResult.ToString method
 
+Creates a friendly string for the current instance.
+
 ```csharp
 public override string ToString()
 ```
+
+## Return Value
+
+A friendly string for the current instance.
 
 ## See Also
 

@@ -1,8 +1,16 @@
 # ByteCountingStream.Write method
 
+Increments the [`BytesWritten`](./BytesWritten.md) property by the count of bytes requested to be written.
+
 ```csharp
 public override void Write(byte[] buffer, int offset, int count)
 ```
+
+| parameter | description |
+| --- | --- |
+| buffer | A buffer requested to be written. Ignored. |
+| offset | The offset of the buffer containing the bytes to be written. Ignored. |
+| count | The count of bytes to increment the [`BytesWritten`](./BytesWritten.md) property. |
 
 ## See Also
 
