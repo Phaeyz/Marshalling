@@ -966,6 +966,216 @@ internal class MarshalStreamTest
 
     #endregion IsFixedBuffer
 
+    #region IsMatch
+
+    [Test]
+    public async Task IsMatch_ForFixedBufferEmptyMatch_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.IsMatch(Span<byte>.Empty, out int bytesRead)).IsTrue();
+        await Assert.That(bytesRead).IsEqualTo(0);
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task IsMatch_ForFixedBufferFirstCharMismatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[0]++;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.IsMatch(match.AsSpan(), out int bytesRead)).IsFalse();
+        await Assert.That(bytesRead).IsLessThan(byteCountToCheck);
+        await Assert.That(stream.Position).IsLessThan(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatch_ForFixedBufferFullStream_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.IsMatch(s_sourceBuffer.AsSpan(), out int bytesRead)).IsTrue();
+        await Assert.That(bytesRead).IsEqualTo(s_sourceBuffer.Length);
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task IsMatch_ForFixedBufferLastCharMismatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[byteCountToCheck - 1]++;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.IsMatch(match.AsSpan(), out int bytesRead)).IsFalse();
+        await Assert.That(bytesRead).IsLessThan(byteCountToCheck);
+        await Assert.That(stream.Position).IsLessThan(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatch_ForFixedBufferPartialStream_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.IsMatch(s_sourceBuffer.AsSpan(0, byteCountToCheck), out int bytesRead)).IsTrue();
+        await Assert.That(bytesRead).IsEqualTo(byteCountToCheck);
+        await Assert.That(stream.Position).IsEqualTo(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatch_ForStreamEmptyMatch_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.IsMatch(Span<byte>.Empty, out int bytesRead)).IsTrue();
+        await Assert.That(bytesRead).IsEqualTo(0);
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task IsMatch_ForStreamFirstCharMismatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[0]++;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.IsMatch(match.AsSpan(), out int bytesRead)).IsFalse();
+        await Assert.That(bytesRead).IsLessThan(byteCountToCheck);
+        await Assert.That(stream.Position).IsLessThan(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatch_ForStreamFullStream_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.IsMatch(s_sourceBuffer.AsSpan(), out int bytesRead)).IsTrue();
+        await Assert.That(bytesRead).IsEqualTo(s_sourceBuffer.Length);
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task IsMatch_ForStreamLastCharMismatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[byteCountToCheck - 1]++;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.IsMatch(match.AsSpan(), out int bytesRead)).IsFalse();
+        await Assert.That(bytesRead).IsLessThan(byteCountToCheck);
+        await Assert.That(stream.Position).IsLessThan(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatch_ForStreamPartialStream_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.IsMatch(s_sourceBuffer.AsSpan(0, byteCountToCheck), out int bytesRead)).IsTrue();
+        await Assert.That(bytesRead).IsEqualTo(byteCountToCheck);
+        await Assert.That(stream.Position).IsEqualTo(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForFixedBufferEmptyMatch_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.IsMatchAsync(Memory<byte>.Empty)).IsEqualTo((true, 0));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForFixedBufferFirstCharMismatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[0]++;
+        using MarshalStream stream = CreateForFixedBuffer();
+        (bool matched, int bytesRead) = await stream.IsMatchAsync(match.AsMemory());
+        await Assert.That(matched).IsFalse();
+        await Assert.That(bytesRead).IsLessThan(byteCountToCheck);
+        await Assert.That(stream.Position).IsLessThan(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForFixedBufferFullStream_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.IsMatchAsync(s_sourceBuffer.AsMemory())).IsEqualTo((true, s_sourceBuffer.Length));
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForFixedBufferLastCharMismatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[byteCountToCheck - 1]++;
+        using MarshalStream stream = CreateForFixedBuffer();
+        (bool matched, int bytesRead) = await stream.IsMatchAsync(match.AsMemory());
+        await Assert.That(matched).IsFalse();
+        await Assert.That(bytesRead).IsLessThan(byteCountToCheck);
+        await Assert.That(stream.Position).IsLessThan(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForFixedBufferPartialStream_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.IsMatchAsync(s_sourceBuffer.AsMemory(0, byteCountToCheck))).IsEqualTo((true, byteCountToCheck));
+        await Assert.That(stream.Position).IsEqualTo(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForStreamEmptyMatch_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.IsMatchAsync(Memory<byte>.Empty)).IsEqualTo((true, 0));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForStreamFirstCharMismatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[0]++;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        (bool matched, int bytesRead) = await stream.IsMatchAsync(match.AsMemory());
+        await Assert.That(matched).IsFalse();
+        await Assert.That(bytesRead).IsLessThan(byteCountToCheck);
+        await Assert.That(stream.Position).IsLessThan(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForStreamFullStream_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.IsMatchAsync(s_sourceBuffer.AsMemory())).IsEqualTo((true, s_sourceBuffer.Length));
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForStreamLastCharMismatch_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[byteCountToCheck - 1]++;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        (bool matched, int bytesRead) = await stream.IsMatchAsync(match.AsMemory());
+        await Assert.That(matched).IsFalse();
+        await Assert.That(bytesRead).IsLessThan(byteCountToCheck);
+        await Assert.That(stream.Position).IsLessThan(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task IsMatchAsync_ForStreamPartialStream_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.IsMatchAsync(s_sourceBuffer.AsMemory(0, byteCountToCheck))).IsEqualTo((true, byteCountToCheck));
+        await Assert.That(stream.Position).IsEqualTo(byteCountToCheck);
+    }
+
+    #endregion IsMatch
+
     #region Length
 
     [Test]
