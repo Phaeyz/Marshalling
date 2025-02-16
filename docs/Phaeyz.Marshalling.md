@@ -7,6 +7,7 @@
 | class [ByteConverter](./Phaeyz.Marshalling/ByteConverter.md) | Utility methods for efficiently reading and writing intrinsic values to and from a byte sequence, while honoring the byte order of the values. |
 | class [ByteCountingStream](./Phaeyz.Marshalling/ByteCountingStream.md) | An extremely light-weight stream that counts the number of bytes written to it. The written bytes are discarded after being counted. The stream is not readable or seekable. |
 | static class [EncodingExtensions](./Phaeyz.Marshalling/EncodingExtensions.md) | Utility methods for text encoding. |
+| interface [IMarshalStreamProcessor](./Phaeyz.Marshalling/IMarshalStreamProcessor.md) | This interface is usable with [`MarshalStream`](./Phaeyz.Marshalling/MarshalStream.md) to process bytes being read and written. |
 | class [MarshalStream](./Phaeyz.Marshalling/MarshalStream.md) | A stream similar to BufferedStream but provides access to the read buffer, making the stream ideal for parsing and scanning. |
 | enum [MarshalStreamNullTerminatorBehavior](./Phaeyz.Marshalling/MarshalStreamNullTerminatorBehavior.md) | Specifies the behavior of a [`MarshalStream`](./Phaeyz.Marshalling/MarshalStream.md) when it encounters a null terminator. |
 | struct [MarshalStreamReadStringResult](./Phaeyz.Marshalling/MarshalStreamReadStringResult.md) | Used by all `ReadStringAsync` overloads in [`MarshalStream`](./Phaeyz.Marshalling/MarshalStream.md) to return the result of a string read operation. |

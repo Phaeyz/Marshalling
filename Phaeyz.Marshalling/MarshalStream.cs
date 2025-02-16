@@ -47,6 +47,8 @@ public class MarshalStream : Stream
     private readonly bool _canRead;
     private readonly bool _canSeek;
     private readonly bool _canWrite;
+    private readonly HashSet<IMarshalStreamProcessor> _readProcessors = [];
+    private readonly HashSet<IMarshalStreamProcessor> _writeProcessors = [];
 
     #region Constructors
 
@@ -134,17 +136,17 @@ public class MarshalStream : Stream
     /// <summary>
     /// Returns <c>true</c> if the stream may be read from, <c>false</c> otherwise.
     /// </summary>
-    public override bool CanRead => !IsDisposed && _canRead;
+    public override bool CanRead => !IsDisposed && _canRead && _writeProcessors.Count == 0;
 
     /// <summary>
     /// Returns <c>true</c> if the stream may seeked, <c>false</c> otherwise.
     /// </summary>
-    public override bool CanSeek => !IsDisposed && _canSeek;
+    public override bool CanSeek => !IsDisposed && _canSeek && _readProcessors.Count == 0 && _writeProcessors.Count == 0;
 
     /// <summary>
     /// Returns <c>true</c> if the stream may be written to, <c>false</c> otherwise.
     /// </summary>
-    public override bool CanWrite => !IsDisposed && _canWrite;
+    public override bool CanWrite => !IsDisposed && _canWrite && _readProcessors.Count == 0;
 
     /// <summary>
     /// Returns <c>true</c> if the stream is disposed, <c>false</c> otherwise.
@@ -213,6 +215,62 @@ public class MarshalStream : Stream
 
     #endregion Properties
 
+    #region AddProcessor
+
+    /// <summary>
+    /// Registers a new read processor.
+    /// </summary>
+    /// <param name="processor">
+    /// The read processor to register.
+    /// </param>
+    /// <returns>
+    /// A <see cref="System.IDisposable"/> which may be used to remove the read processor.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// The read processor is already registered.
+    /// </exception>
+    /// <remarks>
+    /// When the read processor is registered, the stream will become unseekable and read-only.
+    /// Multiple read processors may be concurrently registered.
+    /// </remarks>
+    public IDisposable AddReadProcessor(IMarshalStreamProcessor processor)
+    {
+        VerifyReadableStream();
+        if (!_readProcessors.Add(processor))
+        {
+            throw new ArgumentException("The processor is already registered.", nameof(processor));
+        }
+        return new ProcessorRemover(processor, _readProcessors);
+    }
+
+    /// <summary>
+    /// Registers a new write processor.
+    /// </summary>
+    /// <param name="processor">
+    /// The write processor to register.
+    /// </param>
+    /// <returns>
+    /// A <see cref="System.IDisposable"/> which may be used to remove the write processor.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// The write processor is already registered.
+    /// </exception>
+    /// <remarks>
+    /// When the write processor is registered, the stream will become unseekable and write-only.
+    /// Multiple write processors may be concurrently registered.
+    /// </remarks>
+    public IDisposable AddWriteProcessor(IMarshalStreamProcessor processor)
+    {
+        VerifyWritableStream();
+        if (!_writeProcessors.Add(processor))
+        {
+            throw new ArgumentException("The processor is already registered.", nameof(processor));
+        }
+        return new ProcessorRemover(processor, _writeProcessors);
+    }
+
+    #endregion AddProcessor
+
     #region AlignBytesAvailableToBufferStart
 
     /// <summary>
@@ -262,7 +320,7 @@ public class MarshalStream : Stream
     /// An I/O error occurred.
     /// </exception>
     /// <exception cref="System.NotSupportedException">
-    /// The current stream is not readadble, or <paramref name="destination"/> is not writable.
+    /// The current stream is not readable, or <paramref name="destination"/> is not writable.
     /// </exception>
     /// <exception cref="System.ObjectDisposedException">
     /// The stream is disposed.
@@ -286,11 +344,14 @@ public class MarshalStream : Stream
                 // The default implementation of the Span version of Write reserves a buffer and copies to it.
                 if (MemoryMarshal.TryGetArray(BufferedReadableBytes, out ArraySegment<byte> fixedBufferSegment))
                 {
+                    Process(_readProcessors, fixedBufferSegment.Array!, fixedBufferSegment.Offset, fixedBufferSegment.Count);
                     destination.Write(fixedBufferSegment.Array!, fixedBufferSegment.Offset, fixedBufferSegment.Count);
                 }
                 else
                 {
-                    destination.Write(BufferedReadableBytes.Span);
+                    ReadOnlySpan<byte> bytes = BufferedReadableBytes.Span;
+                    Process(_readProcessors, bytes);
+                    destination.Write(bytes);
                 }
                 _currentReadOffset = _bufferedByteCount;
             }
@@ -301,7 +362,9 @@ public class MarshalStream : Stream
 
         if (BufferedReadableByteCount > 0)
         {
-            destination.Write(_buffer!, (int)_currentReadOffset, BufferedReadableByteCount); // Don't use the Span version because it does an extra buffer copy.
+            int byteCount = BufferedReadableByteCount;
+            Process(_readProcessors, _buffer!, (int)_currentReadOffset, byteCount);
+            destination.Write(_buffer!, (int)_currentReadOffset, byteCount); // Don't use the Span version because it does an extra buffer copy.
             _currentReadOffset = 0;
             _bufferedByteCount = 0;
         }
@@ -312,6 +375,7 @@ public class MarshalStream : Stream
             int bytesRead;
             while ((bytesRead = _stream!.Read(buffer, 0, buffer.Length)) != 0) // Don't use the Span version because it does an extra buffer copy.
             {
+                Process(_readProcessors, buffer, 0, bytesRead);
                 destination.Write(buffer, 0, bytesRead); // Don't use the Span version because it does an extra buffer copy.
             }
         }
@@ -350,7 +414,7 @@ public class MarshalStream : Stream
     /// An I/O error occurred.
     /// </exception>
     /// <exception cref="System.NotSupportedException">
-    /// The current stream is not readadble, or the destination stream is not writable.
+    /// The current stream is not readable, or the destination stream is not writable.
     /// </exception>
     /// <exception cref="System.ObjectDisposedException">
     /// The stream is disposed.
@@ -373,7 +437,9 @@ public class MarshalStream : Stream
         {
             if (BufferedReadableByteCount > 0)
             {
-                await destination.WriteAsync(BufferedReadableBytes, cancellationToken).ConfigureAwait(false);
+                ReadOnlyMemory<byte> bytes = BufferedReadableBytes;
+                Process(_readProcessors, bytes.Span);
+                await destination.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
                 _currentReadOffset = _bufferedByteCount;
             }
             return;
@@ -383,7 +449,9 @@ public class MarshalStream : Stream
 
         if (BufferedReadableByteCount > 0)
         {
-            await destination.WriteAsync(BufferedReadableBytes, cancellationToken).ConfigureAwait(false);
+            ReadOnlyMemory<byte> bytes = BufferedReadableBytes;
+            Process(_readProcessors, bytes.Span);
+            await destination.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
             _currentReadOffset = 0;
             _bufferedByteCount = 0;
         }
@@ -391,10 +459,13 @@ public class MarshalStream : Stream
         byte[] buffer = (bufferSize > 0) ? ArrayPool<byte>.Shared.Rent(bufferSize) : _buffer!;
         try
         {
+            var memoryBuffer = new Memory<byte>(buffer);
             int bytesRead;
-            while ((bytesRead = await _stream!.ReadAsync(new Memory<byte>(buffer), cancellationToken).ConfigureAwait(false)) != 0)
+            while ((bytesRead = await _stream!.ReadAsync(memoryBuffer, cancellationToken).ConfigureAwait(false)) != 0)
             {
-                await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                var bytes = memoryBuffer[..bytesRead];
+                Process(_readProcessors, bytes.Span);
+                await destination.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
             }
         }
         finally
@@ -799,6 +870,53 @@ public class MarshalStream : Stream
 
     #endregion Flush
 
+    #region Process
+
+    /// <summary>
+    /// Passes the buffer data to a collection of processors.
+    /// </summary>
+    /// <param name="processors">
+    /// The processors to process the buffer data.
+    /// </param>
+    /// <param name="buffer">
+    /// The buffer to process.
+    /// </param>
+    /// <param name="offset">
+    /// The offset within the buffer to begin processing.
+    /// </param>
+    /// <param name="count">
+    /// The number of bytes after the offset to begin processing.
+    /// </param>
+    private static void Process(HashSet<IMarshalStreamProcessor> processors, byte[] buffer, int offset, int count)
+    {
+        if (count > 0 && processors.Count > 0)
+        {
+            Process(processors, buffer.AsSpan(offset, count));
+        }
+    }
+
+    /// <summary>
+    /// Passes the buffer data to a collection of processors.
+    /// </summary>
+    /// <param name="processors">
+    /// The processors to process the buffer data.
+    /// </param>
+    /// <param name="bytes">
+    /// The buffer to process.
+    /// </param>
+    private static void Process(HashSet<IMarshalStreamProcessor> processors, ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.Length > 0 && processors.Count > 0)
+        {
+            foreach (IMarshalStreamProcessor processor in processors)
+            {
+                processor.Process(bytes);
+            }
+        }
+    }
+
+    #endregion Process
+
     #region Read
 
     /// <summary>
@@ -878,7 +996,9 @@ public class MarshalStream : Stream
         }
 
         int bytesToRead = Math.Min(buffer.Length, BufferedReadableByteCount);
-        BufferedReadableBytes[..bytesToRead].Span.CopyTo(buffer);
+        ReadOnlySpan<byte> bytes = BufferedReadableBytes[..bytesToRead].Span;
+        Process(_readProcessors, bytes);
+        bytes.CopyTo(buffer);
         _currentReadOffset += bytesToRead;
         return bytesToRead;
     }
@@ -972,7 +1092,9 @@ public class MarshalStream : Stream
         }
 
         int bytesToRead = Math.Min(buffer.Length, BufferedReadableByteCount);
-        BufferedReadableBytes[..bytesToRead].Span.CopyTo(buffer.Span);
+        ReadOnlySpan<byte> bytes = BufferedReadableBytes[..bytesToRead].Span;
+        Process(_readProcessors, bytes);
+        bytes.CopyTo(buffer.Span);
         _currentReadOffset += bytesToRead;
         return bytesToRead;
     }
@@ -1007,7 +1129,12 @@ public class MarshalStream : Stream
             return -1;
         }
 
-        int result = BufferedReadableBytes.Span[0];
+        ReadOnlySpan<byte> bytes = BufferedReadableBytes.Span;
+        if (_readProcessors.Count > 0)
+        {
+            Process(_readProcessors, bytes[..1]);
+        }
+        int result = bytes[0];
         _currentReadOffset++;
         return result;
     }
@@ -1044,12 +1171,17 @@ public class MarshalStream : Stream
             return -1;
         }
 
-        int result = BufferedReadableBytes.Span[0];
+        ReadOnlySpan<byte> bytes = BufferedReadableBytes.Span;
+        if (_readProcessors.Count > 0)
+        {
+            Process(_readProcessors, bytes[..1]);
+        }
+        int result = bytes[0];
         _currentReadOffset++;
         return result;
     }
 
-    #endregion Read
+    #endregion ReadByte
 
     #region ReadString
 
@@ -1254,6 +1386,32 @@ public class MarshalStream : Stream
     }
 
     #endregion ReadString
+
+    #region RemoveProcessor
+
+    /// <summary>
+    /// Unregisters a read processor.
+    /// </summary>
+    /// <param name="processor">
+    /// The read processor to unregister.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> if the read processor was successfully unregistered; <c>false</c> if the read processor was not registered.
+    /// </returns>
+    public bool RemoveReadProcessor(IMarshalStreamProcessor processor) => _readProcessors.Remove(processor);
+
+    /// <summary>
+    /// Unregisters a write processor.
+    /// </summary>
+    /// <param name="processor">
+    /// The write processor to unregister.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> if the write processor was successfully unregistered; <c>false</c> if the write processor was not registered.
+    /// </returns>
+    public bool RemoveWriteProcessor(IMarshalStreamProcessor processor) => _writeProcessors.Remove(processor);
+
+    #endregion RemoveProcessor
 
     #region Scan
 
@@ -1546,6 +1704,10 @@ public class MarshalStream : Stream
 
             if (scanOffset > 0)
             {
+                if (_readProcessors.Count > 0)
+                {
+                    Process(_readProcessors, BufferedReadableBytes[..scanOffset].Span);
+                }
                 if (useDestinationBuffer)
                 {
                     // Using totalBytesRead would reduce this to one line, but totalBytesRead is a long and Slice() requires an int.
@@ -1885,6 +2047,10 @@ public class MarshalStream : Stream
 
             if (scanOffset > 0)
             {
+                if (_readProcessors.Count > 0)
+                {
+                    Process(_readProcessors, BufferedReadableBytes[..scanOffset].Span);
+                }
                 if (destinationBuffer is not null)
                 {
                     // Using totalBytesRead would reduce this to one line, but totalBytesRead is a long and Slice() requires an int.
@@ -2123,6 +2289,10 @@ public class MarshalStream : Stream
             int bufferedCount = BufferedReadableByteCount;
             if (byteCount <= bufferedCount)
             {
+                if (_readProcessors.Count > 0)
+                {
+                    Process(_readProcessors, BufferedReadableBytes.Span[..(int)byteCount]);
+                }
                 _currentReadOffset += byteCount;
                 bytesSkipped += byteCount;
                 break;
@@ -2131,6 +2301,10 @@ public class MarshalStream : Stream
             // If there are any buffered bytes, skip them so we can fill the buffer back up.
             if (bufferedCount > 0)
             {
+                if (_readProcessors.Count > 0)
+                {
+                    Process(_readProcessors, BufferedReadableBytes.Span);
+                }
                 _currentReadOffset = _bufferedByteCount;
                 byteCount -= bufferedCount;
                 bytesSkipped += bufferedCount;
@@ -2186,6 +2360,10 @@ public class MarshalStream : Stream
             int bufferedCount = BufferedReadableByteCount;
             if (byteCount <= bufferedCount)
             {
+                if (_readProcessors.Count > 0)
+                {
+                    Process(_readProcessors, BufferedReadableBytes.Span[..(int)byteCount]);
+                }
                 _currentReadOffset += byteCount;
                 bytesSkipped += byteCount;
                 break;
@@ -2194,6 +2372,10 @@ public class MarshalStream : Stream
             // If there are any buffered bytes, skip them so we can fill the buffer back up.
             if (bufferedCount > 0)
             {
+                if (_readProcessors.Count > 0)
+                {
+                    Process(_readProcessors, BufferedReadableBytes.Span);
+                }
                 _currentReadOffset = _bufferedByteCount;
                 byteCount -= bufferedCount;
                 bytesSkipped += bufferedCount;
@@ -2315,6 +2497,8 @@ public class MarshalStream : Stream
         ValidateBufferArguments(buffer, offset, count);
         FlushReadBeforeWrite();
 
+        Process(_writeProcessors, buffer, offset, count);
+
         // Loop until the entire input buffer has been processed.
         int endOffset = offset + count;
         while (offset < endOffset)
@@ -2372,6 +2556,8 @@ public class MarshalStream : Stream
     public override void Write(ReadOnlySpan<byte> buffer)
     {
         FlushReadBeforeWrite();
+
+        Process(_writeProcessors, buffer);
 
         // Loop until the entire input buffer has been processed.
         for (int offset = 0; offset < buffer.Length;)
@@ -2484,6 +2670,11 @@ public class MarshalStream : Stream
     {
         FlushReadBeforeWrite();
 
+        if (_writeProcessors.Count > 0)
+        {
+            Process(_writeProcessors, buffer.Span);
+        }
+
         // Loop until the entire input buffer has been processed.
         for (int offset = 0; offset < buffer.Length;)
         {
@@ -2542,7 +2733,19 @@ public class MarshalStream : Stream
     /// <exception cref="System.ObjectDisposedException">
     /// The stream is disposed.
     /// </exception>
-    public override void WriteByte(byte value) => Write([value]);
+    public override void WriteByte(byte value)
+    {
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(1);
+        try
+        {
+            buffer[0] = value;
+            Write(buffer, 0, 1);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
 
     /// <summary>
     /// Writes a byte to the current stream and advances the current position within the stream by one byte.
@@ -2582,7 +2785,7 @@ public class MarshalStream : Stream
         }
     }
 
-    #endregion Write
+    #endregion WriteByte
 
     #region WriteString
 
@@ -2752,7 +2955,9 @@ public class MarshalStream : Stream
                         // If there just happens to be enough space on the stream buffer, simply copy.
                         if (_buffer!.Length - _bufferedByteCount >= bytesEncoded)
                         {
-                            minimumBuffer.AsSpan(0, bytesEncoded).CopyTo(_buffer.AsSpan(_bufferedByteCount));
+                            Span<byte> sourceBuffer = minimumBuffer.AsSpan(0, bytesEncoded);
+                            Process(_writeProcessors, sourceBuffer);
+                            sourceBuffer.CopyTo(_buffer.AsSpan(_bufferedByteCount));
                             _bufferedByteCount += bytesEncoded;
                             _bufferHasUnpersistedBytes = true;
                         }
@@ -2765,6 +2970,10 @@ public class MarshalStream : Stream
                     else
                     {
                         // If a minimum buffer was not used, we already wrote the bytes to the stream buffer.
+                        if (_writeProcessors.Count > 0)
+                        {
+                            Process(_writeProcessors, _buffer.AsSpan(_bufferedByteCount, bytesEncoded));
+                        }
                         _bufferedByteCount += bytesEncoded;
                         _bufferHasUnpersistedBytes = true;
                     }
@@ -2787,7 +2996,9 @@ public class MarshalStream : Stream
                         FlushWrite();
                     }
                     // Simply copy the null terminator to the buffer.
-                    s_nullTerminatorBytes.AsSpan(0, nullTerminatorSize).CopyTo(_buffer.AsSpan(_bufferedByteCount));
+                    Span<byte> nullTerminatorBytes = s_nullTerminatorBytes.AsSpan(0, nullTerminatorSize);
+                    Process(_writeProcessors, nullTerminatorBytes);
+                    nullTerminatorBytes.CopyTo(_buffer.AsSpan(_bufferedByteCount));
                     _bufferedByteCount += nullTerminatorSize;
                     _bufferHasUnpersistedBytes = true;
                 }
@@ -2853,10 +3064,107 @@ public class MarshalStream : Stream
     /// </exception>
     public ValueTask<int> WriteStringAsync(
         Encoding encoding,
+        string value,
+        bool writeNullTerminator = false,
+        CancellationToken cancellationToken = default) => WriteStringAsync(
+            encoding.GetEncoder(),
+            value?.AsMemory() ?? throw new ArgumentNullException(nameof(value)),
+            writeNullTerminator,
+            cancellationToken);
+
+    /// <summary>
+    /// Writes a string to the stream.
+    /// </summary>
+    /// <param name="encoding">
+    /// The <see cref="System.Text.Encoding"/> object to use for encoding the characters of the string to bytes onto the stream.
+    /// </param>
+    /// <param name="value">
+    /// The string value to write to the stream.
+    /// </param>
+    /// <param name="writeNullTerminator">
+    /// If <c>true</c> a null terminator will be persisted after the string. The default value is <c>false</c>.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A cancellation token which may be used to cancel the operation.
+    /// </param>
+    /// <returns>
+    /// A task yielding the number of bytes written to the stream.
+    /// </returns>
+    /// <exception cref="System.ArgumentNullException">
+    /// The input string value is <c>null</c>.
+    /// </exception>
+    /// <exception cref="System.Text.EncoderFallbackException">
+    /// The <paramref name="encoding"/>'s <see cref="System.Text.Encoding.EncoderFallback"/> property is set
+    /// to <see cref="System.Text.EncoderExceptionFallback"/> and a fallback occurred. When this happens, the
+    /// stream's new position is undefined.
+    /// </exception>
+    /// <exception cref="System.IO.IOException">
+    /// An I/O error occurred.
+    /// </exception>
+    /// <exception cref="System.NotSupportedException">
+    /// The current stream is not writable, or the read buffer cannot be flushed because the current stream is not seekable.
+    /// </exception>
+    /// <exception cref="System.ObjectDisposedException">
+    /// The stream is disposed.
+    /// </exception>
+    /// <exception cref="System.OperationCanceledException">
+    /// The cancellation token was canceled.
+    /// </exception>
+    public ValueTask<int> WriteStringAsync(
+        Encoding encoding,
         ReadOnlyMemory<char> value,
         bool writeNullTerminator = false,
         CancellationToken cancellationToken = default) =>
             WriteStringAsync(encoding.GetEncoder(), value, writeNullTerminator, cancellationToken);
+
+    /// <summary>
+    /// Writes a string to the stream.
+    /// </summary>
+    /// <param name="encoder">
+    /// The <see cref="System.Text.Encoder"/> object to use for encoding the characters of the string to bytes onto the stream.
+    /// </param>
+    /// <param name="value">
+    /// The string value to write to the stream.
+    /// </param>
+    /// <param name="writeNullTerminator">
+    /// If <c>true</c> a null terminator will be persisted after the string. The default value is <c>false</c>.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A cancellation token which may be used to cancel the operation.
+    /// </param>
+    /// <returns>
+    /// A task yielding the number of bytes written to the stream.
+    /// </returns>
+    /// <exception cref="System.ArgumentNullException">
+    /// The input string value is <c>null</c>.
+    /// </exception>
+    /// <exception cref="System.Text.EncoderFallbackException">
+    /// The <paramref name="encoder"/>'s <see cref="System.Text.Encoder.Fallback"/> property (or the owning
+    /// <see cref="System.Text.Encoding"/>'s <see cref="System.Text.Encoding.EncoderFallback"/> property) is set
+    /// to <see cref="System.Text.EncoderExceptionFallback"/> and a fallback occurred. When this happens, the
+    /// stream's new position is undefined.
+    /// </exception>
+    /// <exception cref="System.IO.IOException">
+    /// An I/O error occurred.
+    /// </exception>
+    /// <exception cref="System.NotSupportedException">
+    /// The current stream is not writable, or the read buffer cannot be flushed because the current stream is not seekable.
+    /// </exception>
+    /// <exception cref="System.ObjectDisposedException">
+    /// The stream is disposed.
+    /// </exception>
+    /// <exception cref="System.OperationCanceledException">
+    /// The cancellation token was canceled.
+    /// </exception>
+    public ValueTask<int> WriteStringAsync(
+        Encoder encoder,
+        string value,
+        bool writeNullTerminator = false,
+        CancellationToken cancellationToken = default) => WriteStringAsync(
+            encoder,
+            value?.AsMemory() ?? throw new ArgumentNullException(nameof(value)),
+            writeNullTerminator,
+            cancellationToken);
 
     /// <summary>
     /// Writes a string to the stream.
@@ -2991,7 +3299,9 @@ public class MarshalStream : Stream
                         // If there just happens to be enough space on the stream buffer, simply copy.
                         if (_buffer!.Length - _bufferedByteCount >= bytesEncoded)
                         {
-                            minimumBuffer.AsSpan(0, bytesEncoded).CopyTo(_buffer.AsSpan(_bufferedByteCount));
+                            Span<byte> sourceBuffer = minimumBuffer.AsSpan(0, bytesEncoded);
+                            Process(_writeProcessors, sourceBuffer);
+                            sourceBuffer.CopyTo(_buffer.AsSpan(_bufferedByteCount));
                             _bufferedByteCount += bytesEncoded;
                             _bufferHasUnpersistedBytes = true;
                         }
@@ -3004,6 +3314,10 @@ public class MarshalStream : Stream
                     else
                     {
                         // If a minimum buffer was not used, we already wrote the bytes to the stream buffer.
+                        if (_writeProcessors.Count > 0)
+                        {
+                            Process(_writeProcessors, _buffer.AsSpan(_bufferedByteCount, bytesEncoded));
+                        }
                         _bufferedByteCount += bytesEncoded;
                         _bufferHasUnpersistedBytes = true;
                     }
@@ -3026,7 +3340,9 @@ public class MarshalStream : Stream
                         await FlushWriteAsync(cancellationToken).ConfigureAwait(false);
                     }
                     // Simply copy the null terminator to the buffer.
-                    s_nullTerminatorBytes.AsSpan(0, nullTerminatorSize).CopyTo(_buffer.AsSpan(_bufferedByteCount));
+                    Span<byte> nullTerminatorBytes = s_nullTerminatorBytes.AsSpan(0, nullTerminatorSize);
+                    Process(_writeProcessors, nullTerminatorBytes);
+                    nullTerminatorBytes.CopyTo(_buffer.AsSpan(_bufferedByteCount));
                     _bufferedByteCount += nullTerminatorSize;
                     _bufferHasUnpersistedBytes = true;
                 }
@@ -3460,15 +3776,34 @@ public class MarshalStream : Stream
             {
                 // Loop because the character buffer may need to grow (very unlikely for this to happen, though).
                 int charsDecoded;
+                bool processedBytes = false;
                 while (true)
                 {
                     try
                     {
                         // Favor the byte array version because the default underlying implementation of the Span method creates
                         // a new buffer and does a buffer copy and calls the byte array version anyway.
-                        charsDecoded = (MemoryMarshal.TryGetArray(_stream.BufferedReadableBytes, out ArraySegment<byte> segment) && segment.Array is not null)
-                            ? _decoder.GetChars(segment.Array, segment.Offset, byteCountToProcess, _charBuffer!, 0, false)
-                            : _decoder.GetChars(_stream.BufferedReadableBytes[..byteCountToProcess].Span, _charBuffer!.AsSpan(), false);
+                        if (MemoryMarshal.TryGetArray(_stream.BufferedReadableBytes, out ArraySegment<byte> segment) && segment.Array is not null)
+                        {
+                            // Only process bytes once!
+                            if (!processedBytes)
+                            {
+                                MarshalStream.Process(_stream._readProcessors, segment.Array, segment.Offset, byteCountToProcess);
+                                processedBytes = true;
+                            }
+                            charsDecoded = _decoder.GetChars(segment.Array, segment.Offset, byteCountToProcess, _charBuffer!, 0, false);
+                        }
+                        else
+                        {
+                            ReadOnlySpan<byte> bytes = _stream.BufferedReadableBytes[..byteCountToProcess].Span;
+                            // Only process bytes once!
+                            if (!processedBytes)
+                            {
+                                MarshalStream.Process(_stream._readProcessors, bytes);
+                                processedBytes = true;
+                            }
+                            charsDecoded = _decoder.GetChars(bytes, _charBuffer!.AsSpan(), false);
+                        }
                         break;
                     }
                     catch (ArgumentException)
@@ -3537,4 +3872,39 @@ public class MarshalStream : Stream
     }
 
     #endregion StringReadOperation
+
+    #region ProcessorRemover
+
+    /// <summary>
+    /// A class which can be used to remove a processor using <see cref="System.IDisposable"/>.
+    /// </summary>
+    /// <param name="processor">
+    /// The processor to remove.
+    /// </param>
+    /// <param name="processors">
+    /// The set to remove the processors from.
+    /// </param>
+    private class ProcessorRemover(
+        IMarshalStreamProcessor processor,
+        HashSet<IMarshalStreamProcessor> processors) : IDisposable
+    {
+        private bool _disposed = false;
+
+        public void Dispose()
+        {
+            try
+            {
+                if (!_disposed)
+                {
+                    processors.Remove(processor);
+                }
+            }
+            finally
+            {
+                _disposed = false;
+            }
+        }
+    }
+
+    #endregion ProcessorRemover
 }

@@ -24,7 +24,7 @@ A task which is completed when the operation is complete.
 | ArgumentNullException | *destination* is `null`. |
 | ArgumentOutOfRangeException | *bufferSize* is negative. |
 | IOException | An I/O error occurred. |
-| NotSupportedException | The current stream is not readadble, or the destination stream is not writable. |
+| NotSupportedException | The current stream is not readable, or the destination stream is not writable. |
 | ObjectDisposedException | The stream is disposed. |
 | OperationCanceledException | The cancellation token was canceled. |
 
