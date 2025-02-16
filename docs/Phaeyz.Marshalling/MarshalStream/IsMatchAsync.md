@@ -3,7 +3,7 @@
 Check to see if the next bytes to be read from the stream match the provided sequence of bytes.
 
 ```csharp
-public Task<(bool matched, int bytesRead)> IsMatchAsync(Memory<byte> match)
+public Task<(bool matched, int bytesRead)> IsMatchAsync(ReadOnlyMemory<byte> match)
 ```
 
 | parameter | description |

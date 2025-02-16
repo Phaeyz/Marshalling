@@ -3,7 +3,7 @@
 Check to see if the next bytes to be read from the stream match the provided sequence of bytes.
 
 ```csharp
-public bool IsMatch(Span<byte> match, out int bytesRead)
+public bool IsMatch(ReadOnlySpan<byte> match, out int bytesRead)
 ```
 
 | parameter | description |

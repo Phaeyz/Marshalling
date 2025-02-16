@@ -1,5 +1,5 @@
 setlocal
-set lib=Phaeyz.Marshalling
+set libName=Phaeyz.Marshalling
 set repoUrl=https://github.com/Phaeyz/Marshalling
-dotnet run ..\%lib%\bin\Debug\net9.0\%lib%.dll ..\docs --source %repoUrl%/blob/main/%lib% --namespace %lib% --clean
+dotnet run ..\%libName%\bin\Debug\net9.0\%libName%.dll ..\docs --source %repoUrl%/blob/main/%libName% --namespace %libName% --clean
 endlocal

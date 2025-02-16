@@ -886,7 +886,7 @@ public class MarshalStream : Stream
     /// <returns>
     /// <c>true</c> if the provided sequence of bytes matches the next bytes to be read from the stream.
     /// </returns>
-    public bool IsMatch(Span<byte> match, out int bytesRead)
+    public bool IsMatch(ReadOnlySpan<byte> match, out int bytesRead)
     {
         VerifyReadableStream();
 
@@ -963,7 +963,7 @@ public class MarshalStream : Stream
     /// prevents having to increment the read pointer. If the first item of the tuple is <c>true</c>, the second item will be
     /// the number of bytes in <paramref name="match"/>.
     /// </returns>
-    public async Task<(bool matched, int bytesRead)> IsMatchAsync(Memory<byte> match)
+    public async Task<(bool matched, int bytesRead)> IsMatchAsync(ReadOnlyMemory<byte> match)
     {
         VerifyReadableStream();
 
@@ -980,7 +980,7 @@ public class MarshalStream : Stream
                 return (false, 0);
             }
 
-            Span<byte> matchSpan = match.Span;
+            ReadOnlySpan<byte> matchSpan = match.Span;
             for (int i = 0; i < match.Length; i++)
             {
                 if (fixedBuffer[(int)_currentReadOffset + i] != matchSpan[i])
@@ -999,7 +999,7 @@ public class MarshalStream : Stream
         int bytesRead = 0;
         while (true)
         {
-            Span<byte> matchSpan = match.Span;
+            ReadOnlySpan<byte> matchSpan = match.Span;
             for (long currentReadOffset = _currentReadOffset;
                 currentReadOffset < _bufferedByteCount && totalBytesProcessed < match.Length;
                 totalBytesProcessed++, currentReadOffset++)
