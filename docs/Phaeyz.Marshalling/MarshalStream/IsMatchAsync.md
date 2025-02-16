@@ -3,16 +3,27 @@
 Check to see if the next bytes to be read from the stream match the provided sequence of bytes.
 
 ```csharp
-public Task<(bool matched, int bytesRead)> IsMatchAsync(ReadOnlyMemory<byte> match)
+public Task<(bool matched, int bytesRead)> IsMatchAsync(ReadOnlyMemory<byte> match, 
+    CancellationToken cancellationToken = default)
 ```
 
 | parameter | description |
 | --- | --- |
 | match | The sequence of bytes to compare against the next bytes to be read from the stream. |
+| cancellationToken | A cancellation token which may be used to cancel the operation. |
 
 ## Return Value
 
 A tuple where the first item is a boolean where it's value is `true` if the provided sequence of bytes matches the next bytes to be read from the stream. The second item of the tuple receives the number of bytes read from the stream when attempting to do a compare. This may be less than the full length of *match* if the buffer prevents having to increment the read pointer. If the first item of the tuple is `true`, the second item will be the number of bytes in *match*.
+
+## Exceptions
+
+| exception | condition |
+| --- | --- |
+| IOException | An I/O error occurred. |
+| NotSupportedException | The stream is not readable. |
+| ObjectDisposedException | The stream is disposed. |
+| OperationCanceledException | The cancellation token was canceled. |
 
 ## See Also
 

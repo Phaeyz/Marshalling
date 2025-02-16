@@ -956,6 +956,9 @@ public class MarshalStream : Stream
     /// <param name="match">
     /// The sequence of bytes to compare against the next bytes to be read from the stream.
     /// </param>
+    /// <param name="cancellationToken">
+    /// A cancellation token which may be used to cancel the operation.
+    /// </param>
     /// <returns>
     /// A tuple where the first item is a boolean where it's value is <c>true</c> if the provided sequence of bytes matches
     /// the next bytes to be read from the stream. The second item of the tuple receives the number of bytes read from the
@@ -963,7 +966,19 @@ public class MarshalStream : Stream
     /// prevents having to increment the read pointer. If the first item of the tuple is <c>true</c>, the second item will be
     /// the number of bytes in <paramref name="match"/>.
     /// </returns>
-    public async Task<(bool matched, int bytesRead)> IsMatchAsync(ReadOnlyMemory<byte> match)
+    /// <exception cref="System.IO.IOException">
+    /// An I/O error occurred.
+    /// </exception>
+    /// <exception cref="System.NotSupportedException">
+    /// The stream is not readable.
+    /// </exception>
+    /// <exception cref="System.ObjectDisposedException">
+    /// The stream is disposed.
+    /// </exception>
+    /// <exception cref="System.OperationCanceledException">
+    /// The cancellation token was canceled.
+    /// </exception>
+    public async Task<(bool matched, int bytesRead)> IsMatchAsync(ReadOnlyMemory<byte> match, CancellationToken cancellationToken = default)
     {
         VerifyReadableStream();
 
@@ -993,7 +1008,7 @@ public class MarshalStream : Stream
             return (true, match.Length);
         }
 
-        FlushWrite();
+        await FlushWriteAsync(cancellationToken).ConfigureAwait(false);
 
         int totalBytesProcessed = 0;
         int bytesRead = 0;
@@ -1018,7 +1033,7 @@ public class MarshalStream : Stream
                 return (true, bytesRead);
             }
 
-            if (!await EnsureByteCountAvailableInBufferAsync(1).ConfigureAwait(false))
+            if (!await EnsureByteCountAvailableInBufferAsync(1, cancellationToken).ConfigureAwait(false))
             {
                 return (false, bytesRead);
             }
