@@ -1,20 +1,20 @@
-# MarshalStream.IsMatchAsync method
+# MarshalStream.MatchAsync method
 
 Check to see if the next bytes to be read from the stream match the provided sequence of bytes.
 
 ```csharp
-public Task<(bool matched, int bytesRead)> IsMatchAsync(ReadOnlyMemory<byte> match, 
+public Task<MarshalStreamMatchResult> MatchAsync(ReadOnlyMemory<byte> matchBytes, 
     CancellationToken cancellationToken = default)
 ```
 
 | parameter | description |
 | --- | --- |
-| match | The sequence of bytes to compare against the next bytes to be read from the stream. |
+| matchBytes | The sequence of bytes to compare against the next bytes to be read from the stream. |
 | cancellationToken | A cancellation token which may be used to cancel the operation. |
 
 ## Return Value
 
-A tuple where the first item is a boolean where it's value is `true` if the provided sequence of bytes matches the next bytes to be read from the stream. The second item of the tuple receives the number of bytes read from the stream when attempting to do a compare. This may be less than the full length of *match* if the buffer prevents having to increment the read pointer. If the first item of the tuple is `true`, the second item will be the number of bytes in *match*.
+A [`MarshalStreamMatchResult`](../MarshalStreamMatchResult.md) instance which describes the result of the match operation.
 
 ## Exceptions
 
@@ -27,6 +27,7 @@ A tuple where the first item is a boolean where it's value is `true` if the prov
 
 ## See Also
 
+* struct [MarshalStreamMatchResult](../MarshalStreamMatchResult.md)
 * class [MarshalStream](../MarshalStream.md)
 * namespace [Phaeyz.Marshalling](../../Phaeyz.Marshalling.md)
 

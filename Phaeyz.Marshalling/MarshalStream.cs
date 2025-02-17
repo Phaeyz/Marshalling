@@ -870,82 +870,81 @@ public class MarshalStream : Stream
 
     #endregion Flush
 
-    #region IsMatch
+    #region Match
 
     /// <summary>
     /// Check to see if the next bytes to be read from the stream match the provided sequence of bytes.
     /// </summary>
-    /// <param name="match">
+    /// <param name="matchBytes">
     /// The sequence of bytes to compare against the next bytes to be read from the stream.
     /// </param>
-    /// <param name="bytesRead">
-    /// Receives the number of bytes read from the stream when attempting to do a compare. This may be less than the
-    /// full length of <paramref name="match"/> if the buffer prevents having to increment the read pointer.
-    /// If <c>true</c> is returned, <paramref name="bytesRead"/> will be the number of bytes in <paramref name="match"/>.
-    /// </param>
     /// <returns>
-    /// <c>true</c> if the provided sequence of bytes matches the next bytes to be read from the stream.
+    /// A <see cref="Phaeyz.Marshalling.MarshalStreamMatchResult"/> instance which describes the result of the match operation.
     /// </returns>
-    public bool IsMatch(ReadOnlySpan<byte> match, out int bytesRead)
+    public MarshalStreamMatchResult Match(ReadOnlySpan<byte> matchBytes)
     {
         VerifyReadableStream();
 
-        if (match.Length == 0)
+        if (matchBytes.Length == 0)
         {
-            bytesRead = 0;
-            return true;
+            return new(true, 0, false);
         }
 
         if (_fixedBuffer is not null)
         {
             var fixedBuffer = _fixedBuffer.Value.Span;
-            if (fixedBuffer.Length - _currentReadOffset < match.Length)
+            if (fixedBuffer.Length - _currentReadOffset < matchBytes.Length)
             {
-                bytesRead = 0;
-                return false;
+                return new(false, 0, true);
             }
 
-            for (int i = 0; i < match.Length; i++)
+            for (int i = 0; i < matchBytes.Length; i++)
             {
-                if (fixedBuffer[(int)_currentReadOffset + i] != match[i])
+                if (fixedBuffer[(int)_currentReadOffset + i] != matchBytes[i])
                 {
-                    bytesRead = 0;
-                    return false;
+                    return new(false, 0, false);
                 }
             }
 
-            _currentReadOffset += match.Length;
-            bytesRead = match.Length;
-            return true;
+            _currentReadOffset += matchBytes.Length;
+            return new(true, matchBytes.Length, false);
         }
 
         FlushWrite();
 
-        int totalBytesProcessed = 0;
-        bytesRead = 0;
+        // If the buffer is large enough to hold the entire match, ensure at least that
+        // much is buffered. This will prevent us from having to advance the read pointer.
+        int ensureInitialByteCount = _buffer!.Length >= matchBytes.Length ? matchBytes.Length : 1;
+        if (!EnsureByteCountAvailableInBuffer(ensureInitialByteCount))
+        {
+            return new(false, 0, true);
+        }
+
+        int bytesMatched = 0;
+        int bytesRead = 0;
         while (true)
         {
             for (long currentReadOffset = _currentReadOffset;
-                currentReadOffset < _bufferedByteCount && totalBytesProcessed < match.Length;
-                totalBytesProcessed++, currentReadOffset++)
+                currentReadOffset < _bufferedByteCount && bytesMatched < matchBytes.Length;
+                bytesMatched++, currentReadOffset++)
             {
-                if (_buffer![currentReadOffset] != match[totalBytesProcessed])
+                if (_buffer![currentReadOffset] != matchBytes[bytesMatched])
                 {
-                    return false;
+                    return new(false, bytesRead, false);
                 }
             }
 
-            _currentReadOffset += (totalBytesProcessed - bytesRead);
-            bytesRead = totalBytesProcessed;
+            _currentReadOffset += (bytesMatched - bytesRead);
+            bytesRead = bytesMatched;
 
-            if (totalBytesProcessed == match.Length)
+            if (bytesMatched == matchBytes.Length)
             {
-                return true;
+                return new(true, bytesRead, false);
             }
 
             if (!EnsureByteCountAvailableInBuffer(1))
             {
-                return false;
+                return new(false, bytesRead, true);
             }
         }
     }
@@ -953,18 +952,14 @@ public class MarshalStream : Stream
     /// <summary>
     /// Check to see if the next bytes to be read from the stream match the provided sequence of bytes.
     /// </summary>
-    /// <param name="match">
+    /// <param name="matchBytes">
     /// The sequence of bytes to compare against the next bytes to be read from the stream.
     /// </param>
     /// <param name="cancellationToken">
     /// A cancellation token which may be used to cancel the operation.
     /// </param>
     /// <returns>
-    /// A tuple where the first item is a boolean where it's value is <c>true</c> if the provided sequence of bytes matches
-    /// the next bytes to be read from the stream. The second item of the tuple receives the number of bytes read from the
-    /// stream when attempting to do a compare. This may be less than the full length of <paramref name="match"/> if the buffer
-    /// prevents having to increment the read pointer. If the first item of the tuple is <c>true</c>, the second item will be
-    /// the number of bytes in <paramref name="match"/>.
+    /// A <see cref="Phaeyz.Marshalling.MarshalStreamMatchResult"/> instance which describes the result of the match operation.
     /// </returns>
     /// <exception cref="System.IO.IOException">
     /// An I/O error occurred.
@@ -978,69 +973,77 @@ public class MarshalStream : Stream
     /// <exception cref="System.OperationCanceledException">
     /// The cancellation token was canceled.
     /// </exception>
-    public async Task<(bool matched, int bytesRead)> IsMatchAsync(ReadOnlyMemory<byte> match, CancellationToken cancellationToken = default)
+    public async Task<MarshalStreamMatchResult> MatchAsync(ReadOnlyMemory<byte> matchBytes, CancellationToken cancellationToken = default)
     {
         VerifyReadableStream();
 
-        if (match.Length == 0)
+        if (matchBytes.Length == 0)
         {
-            return (true, 0);
+            return new(true, 0, false);
         }
 
         if (_fixedBuffer is not null)
         {
             var fixedBuffer = _fixedBuffer.Value.Span;
-            if (fixedBuffer.Length - _currentReadOffset < match.Length)
+            if (fixedBuffer.Length - _currentReadOffset < matchBytes.Length)
             {
-                return (false, 0);
+                return new(false, 0, true);
             }
 
-            ReadOnlySpan<byte> matchSpan = match.Span;
-            for (int i = 0; i < match.Length; i++)
+            ReadOnlySpan<byte> matchSpan = matchBytes.Span;
+            for (int i = 0; i < matchBytes.Length; i++)
             {
                 if (fixedBuffer[(int)_currentReadOffset + i] != matchSpan[i])
                 {
-                    return (false, 0);
+                    return new(false, 0, false);
                 }
             }
 
-            _currentReadOffset += match.Length;
-            return (true, match.Length);
+            _currentReadOffset += matchBytes.Length;
+            return new(true, matchBytes.Length, false);
         }
 
         await FlushWriteAsync(cancellationToken).ConfigureAwait(false);
 
-        int totalBytesProcessed = 0;
+        // If the buffer is large enough to hold the entire match, ensure at least that
+        // much is buffered. This will prevent us from having to advance the read pointer.
+        int ensureInitialByteCount = _buffer!.Length >= matchBytes.Length ? matchBytes.Length : 1;
+        if (!await EnsureByteCountAvailableInBufferAsync(ensureInitialByteCount, cancellationToken).ConfigureAwait(false))
+        {
+            return new(false, 0, true);
+        }
+
+        int bytesMatched = 0;
         int bytesRead = 0;
         while (true)
         {
-            ReadOnlySpan<byte> matchSpan = match.Span;
+            ReadOnlySpan<byte> matchSpan = matchBytes.Span;
             for (long currentReadOffset = _currentReadOffset;
-                currentReadOffset < _bufferedByteCount && totalBytesProcessed < match.Length;
-                totalBytesProcessed++, currentReadOffset++)
+                currentReadOffset < _bufferedByteCount && bytesMatched < matchBytes.Length;
+                bytesMatched++, currentReadOffset++)
             {
-                if (_buffer![currentReadOffset] != matchSpan[totalBytesProcessed])
+                if (_buffer![currentReadOffset] != matchSpan[bytesMatched])
                 {
-                    return (false, bytesRead);
+                    return new(false, bytesRead, false);
                 }
             }
 
-            _currentReadOffset += (totalBytesProcessed - bytesRead);
-            bytesRead = totalBytesProcessed;
+            _currentReadOffset += (bytesMatched - bytesRead);
+            bytesRead = bytesMatched;
 
-            if (totalBytesProcessed == match.Length)
+            if (bytesMatched == matchBytes.Length)
             {
-                return (true, bytesRead);
+                return new(true, matchBytes.Length, false);
             }
 
             if (!await EnsureByteCountAvailableInBufferAsync(1, cancellationToken).ConfigureAwait(false))
             {
-                return (false, bytesRead);
+                return new(false, bytesRead, true);
             }
         }
     }
 
-    #endregion IsMatch
+    #endregion Match
 
     #region Process
 

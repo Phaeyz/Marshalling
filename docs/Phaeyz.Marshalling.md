@@ -10,6 +10,7 @@
 | static class [EncodingExtensions](./Phaeyz.Marshalling/EncodingExtensions.md) | Utility methods for text encoding. |
 | interface [IMarshalStreamProcessor](./Phaeyz.Marshalling/IMarshalStreamProcessor.md) | This interface is usable with [`MarshalStream`](./Phaeyz.Marshalling/MarshalStream.md) to process bytes being read and written. |
 | class [MarshalStream](./Phaeyz.Marshalling/MarshalStream.md) | A stream similar to BufferedStream but provides access to the read buffer, making the stream ideal for parsing and scanning. |
+| struct [MarshalStreamMatchResult](./Phaeyz.Marshalling/MarshalStreamMatchResult.md) | Used by all `Match` overloads in [`MarshalStream`](./Phaeyz.Marshalling/MarshalStream.md) to return the result of a match operation. |
 | enum [MarshalStreamNullTerminatorBehavior](./Phaeyz.Marshalling/MarshalStreamNullTerminatorBehavior.md) | Specifies the behavior of a [`MarshalStream`](./Phaeyz.Marshalling/MarshalStream.md) when it encounters a null terminator. |
 | struct [MarshalStreamReadStringResult](./Phaeyz.Marshalling/MarshalStreamReadStringResult.md) | Used by all `ReadStringAsync` overloads in [`MarshalStream`](./Phaeyz.Marshalling/MarshalStream.md) to return the result of a string read operation. |
 | struct [MarshalStreamScanResult](./Phaeyz.Marshalling/MarshalStreamScanResult.md) | Used by scan methods in [`MarshalStream`](./Phaeyz.Marshalling/MarshalStream.md) to return the result of a scan operation. |

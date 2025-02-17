@@ -30,8 +30,8 @@ public class MarshalStream : Stream
 | [EnsureByteCountAvailableInBufferAsync](MarshalStream/EnsureByteCountAvailableInBufferAsync.md)(…) | Ensures at minimum the specified number of unread bytes is available in the read buffer. |
 | override [Flush](MarshalStream/Flush.md)() | Ensures there is no unread bytes in the read buffer by updating the underlying stream's seek pointer, and ensuring all unwritten bytes are persisted to the underlying stream. |
 | override [FlushAsync](MarshalStream/FlushAsync.md)(…) | Ensures there is no unread bytes in the read buffer by updating the underlying stream's seek pointer, and ensures all unwritten bytes are persisted to the underlying stream. |
-| [IsMatch](MarshalStream/IsMatch.md)(…) | Check to see if the next bytes to be read from the stream match the provided sequence of bytes. |
-| [IsMatchAsync](MarshalStream/IsMatchAsync.md)(…) | Check to see if the next bytes to be read from the stream match the provided sequence of bytes. |
+| [Match](MarshalStream/Match.md)(…) | Check to see if the next bytes to be read from the stream match the provided sequence of bytes. |
+| [MatchAsync](MarshalStream/MatchAsync.md)(…) | Check to see if the next bytes to be read from the stream match the provided sequence of bytes. |
 | override [Read](MarshalStream/Read.md)(…) | Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read. (2 methods) |
 | override [ReadAsync](MarshalStream/ReadAsync.md)(…) | Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read. (2 methods) |
 | override [ReadByte](MarshalStream/ReadByte.md)() | Reads a byte from the current stream and advances the position within the stream by one byte. |
