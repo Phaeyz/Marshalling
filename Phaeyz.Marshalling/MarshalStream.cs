@@ -906,6 +906,10 @@ public class MarshalStream : Stream
                 }
             }
 
+            if (_readProcessors.Count > 0)
+            {
+                Process(_readProcessors, fixedBuffer.Slice((int)_currentReadOffset, matchBytes.Length));
+            }
             _currentReadOffset += matchBytes.Length;
             return new(true, matchBytes.Length, false);
         }
@@ -934,7 +938,9 @@ public class MarshalStream : Stream
                 }
             }
 
-            _currentReadOffset += (bytesMatched - bytesRead);
+            int bytesReadThisPass = bytesMatched - bytesRead;
+            Process(_readProcessors, _buffer, (int)_currentReadOffset, bytesReadThisPass);
+            _currentReadOffset += bytesReadThisPass;
             bytesRead = bytesMatched;
 
             if (bytesMatched == matchBytes.Length)
