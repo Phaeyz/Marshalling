@@ -21,6 +21,8 @@ public class MarshalStream : Stream
 | override [Length](MarshalStream/Length.md) { get; } | Gets the length of the stream. The stream must wrap a fixed buffer or a seekable stream. |
 | override [Position](MarshalStream/Position.md) { get; set; } | Gets the read or write position of the stream. The stream must wrap a fixed buffer or a seekable stream. |
 | [TotalBufferSize](MarshalStream/TotalBufferSize.md) { get; } | Gets the size of the fixed buffer or the buffer for the underlying stream. |
+| [AddReadProcessor](MarshalStream/AddReadProcessor.md)(…) | Registers a new read processor. |
+| [AddWriteProcessor](MarshalStream/AddWriteProcessor.md)(…) | Registers a new write processor. |
 | override [CopyTo](MarshalStream/CopyTo.md)(…) | Copies the remainder of the current stream to the specified destination stream. |
 | override [CopyToAsync](MarshalStream/CopyToAsync.md)(…) | Copies the remainder of the current stream to the specified destination stream. |
 | override [DisposeAsync](MarshalStream/DisposeAsync.md)() | Asynchronously releases the unmanaged resources used by the [`MarshalStream`](./MarshalStream.md). |
@@ -28,12 +30,16 @@ public class MarshalStream : Stream
 | [EnsureByteCountAvailableInBufferAsync](MarshalStream/EnsureByteCountAvailableInBufferAsync.md)(…) | Ensures at minimum the specified number of unread bytes is available in the read buffer. |
 | override [Flush](MarshalStream/Flush.md)() | Ensures there is no unread bytes in the read buffer by updating the underlying stream's seek pointer, and ensuring all unwritten bytes are persisted to the underlying stream. |
 | override [FlushAsync](MarshalStream/FlushAsync.md)(…) | Ensures there is no unread bytes in the read buffer by updating the underlying stream's seek pointer, and ensures all unwritten bytes are persisted to the underlying stream. |
+| [Match](MarshalStream/Match.md)(…) | Check to see if the next bytes to be read from the stream match the provided sequence of bytes. |
+| [MatchAsync](MarshalStream/MatchAsync.md)(…) | Check to see if the next bytes to be read from the stream match the provided sequence of bytes. |
 | override [Read](MarshalStream/Read.md)(…) | Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read. (2 methods) |
 | override [ReadAsync](MarshalStream/ReadAsync.md)(…) | Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read. (2 methods) |
 | override [ReadByte](MarshalStream/ReadByte.md)() | Reads a byte from the current stream and advances the position within the stream by one byte. |
 | [ReadByteAsync](MarshalStream/ReadByteAsync.md)(…) | Reads a byte from the current stream and advances the position within the stream by one byte. |
 | [ReadString](MarshalStream/ReadString.md)(…) | Reads a string from the stream. (2 methods) |
 | [ReadStringAsync](MarshalStream/ReadStringAsync.md)(…) | Initializes a new instance of the StringReadOperation class. (2 methods) |
+| [RemoveReadProcessor](MarshalStream/RemoveReadProcessor.md)(…) | Unregisters a read processor. |
+| [RemoveWriteProcessor](MarshalStream/RemoveWriteProcessor.md)(…) | Unregisters a write processor. |
 | [Scan](MarshalStream/Scan.md)(…) | Efficiently reads each byte of a stream until a scanning function instructs to stop reading. (3 methods) |
 | [ScanAsync](MarshalStream/ScanAsync.md)(…) | Efficiently reads each byte of a stream until a scanning function instructs to stop reading. (3 methods) |
 | override [Seek](MarshalStream/Seek.md)(…) | Sets the position within the current stream. |
@@ -46,7 +52,7 @@ public class MarshalStream : Stream
 | override [WriteByte](MarshalStream/WriteByte.md)(…) | Writes a byte to the current stream and advances the current position within the stream by one byte. |
 | [WriteByteAsync](MarshalStream/WriteByteAsync.md)(…) | Writes a byte to the current stream and advances the current position within the stream by one byte. |
 | [WriteString](MarshalStream/WriteString.md)(…) | Writes a string to the stream. (2 methods) |
-| [WriteStringAsync](MarshalStream/WriteStringAsync.md)(…) | Writes a string to the stream. (2 methods) |
+| [WriteStringAsync](MarshalStream/WriteStringAsync.md)(…) | Writes a string to the stream. (4 methods) |
 | const [DefaultBufferSize](MarshalStream/DefaultBufferSize.md) | The default buffer size created when wrapping a stream (16KB). |
 
 ## Protected Members

@@ -24,6 +24,424 @@ internal class MarshalStreamTest
     private static byte[] Slice(byte[] source, int startIndex, int? length = null) =>
         source[startIndex..(startIndex + (length ?? (source.Length - startIndex)))];
 
+    #region AddReadProcessor
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBuffer_BecomesNonSeekableReadOnly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.CanRead).IsTrue();
+        await Assert.That(stream.CanWrite).IsFalse();
+        await Assert.That(stream.CanSeek).IsTrue();
+        using (stream.AddReadProcessor(new CustomProcessor(bytes => { })))
+        {
+            await Assert.That(stream.CanRead).IsTrue();
+            await Assert.That(stream.CanWrite).IsFalse();
+            await Assert.That(stream.CanSeek).IsFalse();
+        }
+        await Assert.That(stream.CanRead).IsTrue();
+        await Assert.That(stream.CanWrite).IsFalse();
+        await Assert.That(stream.CanSeek).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferCopyTo_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            stream.CopyTo(new MemoryStream());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferCopyToAsync_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            await stream.CopyToAsync(new MemoryStream());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferRead_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            byte[] buffer = new byte[s_sourceBuffer.Length];
+            stream.ReadExactly(buffer.AsSpan());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferReadAsync_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            byte[] buffer = new byte[s_sourceBuffer.Length];
+            await stream.ReadExactlyAsync(buffer.AsMemory());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferReadString_ProcessesBytesCorrectly()
+    {
+        const string testString = "testing123";
+        byte[] bytes = Encoding.UTF8.GetBytes(testString + "\0\0\0");
+        using MarshalStream stream = new(bytes);
+        ValidationProcessor processor = new(bytes.AsMemory()[..(testString.Length + 1)]);
+        using (stream.AddReadProcessor(processor))
+        {
+            byte[] buffer = new byte[bytes.Length];
+            stream.ReadString(Encoding.UTF8, -1, MarshalStreamNullTerminatorBehavior.Stop);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferReadStringAsync_ProcessesBytesCorrectly()
+    {
+        const string testString = "testing123";
+        byte[] bytes = Encoding.UTF8.GetBytes(testString + "\0\0\0");
+        using MarshalStream stream = new(bytes);
+        ValidationProcessor processor = new(bytes.AsMemory()[..(testString.Length + 1)]);
+        using (stream.AddReadProcessor(processor))
+        {
+            byte[] buffer = new byte[bytes.Length];
+            await stream.ReadStringAsync(Encoding.UTF8, -1, MarshalStreamNullTerminatorBehavior.Stop);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferScan_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            stream.Scan(1, -1, b => 1);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferScanAsync_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            await stream.ScanAsync(1, -1, b => 1);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferSkip_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            stream.Skip(s_sourceBuffer.Length);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForFixedBufferSkipAsync_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            await stream.SkipAsync(s_sourceBuffer.Length);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStream_BecomesNonSeekableReadOnly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.CanRead).IsTrue();
+        await Assert.That(stream.CanWrite).IsTrue();
+        await Assert.That(stream.CanSeek).IsTrue();
+        using (stream.AddReadProcessor(new CustomProcessor(bytes => { })))
+        {
+            await Assert.That(stream.CanRead).IsTrue();
+            await Assert.That(stream.CanWrite).IsFalse();
+            await Assert.That(stream.CanSeek).IsFalse();
+        }
+        await Assert.That(stream.CanRead).IsTrue();
+        await Assert.That(stream.CanWrite).IsTrue();
+        await Assert.That(stream.CanSeek).IsTrue();
+    }
+
+    [Test]
+    public void AddReadProcessor_ForStreamCalledTwice_Throws()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        CustomProcessor processor = new(bytes => { });
+        stream.AddReadProcessor(processor);
+        Assert.Throws<ArgumentException>(() => stream.AddReadProcessor(processor));
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamCopyTo_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            stream.CopyTo(new MemoryStream());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamCopyToAsync_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            await stream.CopyToAsync(new MemoryStream());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamRead_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            byte[] buffer = new byte[s_sourceBuffer.Length];
+            stream.ReadExactly(buffer.AsSpan());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamReadAsync_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            byte[] buffer = new byte[s_sourceBuffer.Length];
+            await stream.ReadExactlyAsync(buffer.AsMemory());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamReadString_ProcessesBytesCorrectly()
+    {
+        const string testString = "testing123";
+        byte[] bytes = Encoding.UTF8.GetBytes(testString + "\0\0\0");
+        using MarshalStream stream = new(new CustomMemoryStream(bytes, true, true, true), true);
+        ValidationProcessor processor = new(bytes.AsMemory()[..(testString.Length + 1)]);
+        using (stream.AddReadProcessor(processor))
+        {
+            byte[] buffer = new byte[bytes.Length];
+            stream.ReadString(Encoding.UTF8, -1, MarshalStreamNullTerminatorBehavior.Stop);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamReadStringAsync_ProcessesBytesCorrectly()
+    {
+        const string testString = "testing123";
+        byte[] bytes = Encoding.UTF8.GetBytes(testString + "\0\0\0");
+        using MarshalStream stream = new(new CustomMemoryStream(bytes, true, true, true), true);
+        ValidationProcessor processor = new(bytes.AsMemory()[..(testString.Length + 1)]);
+        using (stream.AddReadProcessor(processor))
+        {
+            byte[] buffer = new byte[bytes.Length];
+            await stream.ReadStringAsync(Encoding.UTF8, -1, MarshalStreamNullTerminatorBehavior.Stop);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamScan_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            stream.Scan(1, -1, b => 1);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamScanAsync_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            await stream.ScanAsync(1, -1, b => 1);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamSkip_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            stream.Skip(s_sourceBuffer.Length);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddReadProcessor_ForStreamSkipAsync_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddReadProcessor(processor))
+        {
+            await stream.SkipAsync(s_sourceBuffer.Length);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddWriteProcessor_ForFixedBuffer_ThrowsBecauseCannotWriteToFixedBuffer()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.CanRead).IsTrue();
+        await Assert.That(stream.CanWrite).IsFalse();
+        await Assert.That(stream.CanSeek).IsTrue();
+        Assert.Throws<NotSupportedException>(() => stream.AddWriteProcessor(new CustomProcessor(bytes => { })));
+    }
+
+    [Test]
+    public async Task AddWriteProcessor_ForStream_BecomesNonSeekableWriteOnly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.CanRead).IsTrue();
+        await Assert.That(stream.CanWrite).IsTrue();
+        await Assert.That(stream.CanSeek).IsTrue();
+        using (stream.AddWriteProcessor(new CustomProcessor(bytes => { })))
+        {
+            await Assert.That(stream.CanRead).IsFalse();
+            await Assert.That(stream.CanWrite).IsTrue();
+            await Assert.That(stream.CanSeek).IsFalse();
+        }
+        await Assert.That(stream.CanRead).IsTrue();
+        await Assert.That(stream.CanWrite).IsTrue();
+        await Assert.That(stream.CanSeek).IsTrue();
+    }
+
+    [Test]
+    public void AddWriteProcessor_ForStreamCalledTwice_Throws()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        CustomProcessor processor = new(bytes => { });
+        stream.AddWriteProcessor(processor);
+        Assert.Throws<ArgumentException>(() => stream.AddWriteProcessor(processor));
+    }
+
+    [Test]
+    public async Task AddWriteProcessor_ForStreamWriteBytes_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddWriteProcessor(processor))
+        {
+            stream.Write(s_sourceBuffer, 0, s_sourceBuffer.Length);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddWriteProcessor_ForStreamWriteSpan_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddWriteProcessor(processor))
+        {
+            stream.Write(s_sourceBuffer);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddWriteProcessor_ForStreamWriteAsyncBytes_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddWriteProcessor(processor))
+        {
+            await stream.WriteAsync(s_sourceBuffer, 0, s_sourceBuffer.Length);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddWriteProcessor_ForStreamWriteAsyncMemory_ProcessesBytesCorrectly()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(s_sourceBuffer.AsMemory());
+        using (stream.AddWriteProcessor(processor))
+        {
+            await stream.WriteAsync(s_sourceBuffer.AsMemory());
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddWriteProcessor_ForStreamWriteString_ProcessesBytesCorrectly()
+    {
+        const string testString = "testing123";
+        byte[] bytes = Encoding.UTF8.GetBytes(testString + '\0');
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(bytes.AsMemory());
+        using (stream.AddWriteProcessor(processor))
+        {
+            stream.WriteString(Encoding.UTF8, testString, true);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    [Test]
+    public async Task AddWriteProcessor_ForStreamWriteStringAsync_ProcessesBytesCorrectly()
+    {
+        const string testString = "testing123";
+        byte[] bytes = Encoding.UTF8.GetBytes(testString + '\0');
+        using MarshalStream stream = CreateForStream(true, true, true);
+        ValidationProcessor processor = new(bytes.AsMemory());
+        using (stream.AddWriteProcessor(processor))
+        {
+            await stream.WriteStringAsync(Encoding.UTF8, testString, true);
+        }
+        await Assert.That(processor.Success).IsTrue();
+    }
+
+    #endregion
+
     #region BufferedReadableBytes
 
     [Test]
@@ -547,6 +965,232 @@ internal class MarshalStreamTest
     }
 
     #endregion IsFixedBuffer
+
+    #region Match
+
+    [Test]
+    public async Task Match_ForFixedBufferEmptyMatch_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.Match([])).IsEqualTo(new(true, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Match_ForFixedBufferFirstCharMatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[0]++;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.Match(match.AsSpan())).IsEqualTo(new(false, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Match_ForFixedBufferFullStream_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.Match(s_sourceBuffer.AsSpan())).IsEqualTo(new(true, s_sourceBuffer.Length, false));
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task Match_ForFixedBufferLastCharMatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[byteCountToCheck - 1]++;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.Match(match.AsSpan())).IsEqualTo(new(false, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Match_ForFixedBufferMatchBiggerThanStream_MatchIsFalse()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.Match([..s_sourceBuffer, ..s_sourceBuffer])).IsEqualTo(new(false, 0, true));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Match_ForFixedBufferPartialStream_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.Match(s_sourceBuffer.AsSpan(0, byteCountToCheck))).IsEqualTo(new(true, byteCountToCheck, false));
+        await Assert.That(stream.Position).IsEqualTo(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task Match_ForStreamEmptyMatch_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.Match(Span<byte>.Empty)).IsEqualTo(new(true, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Match_ForStreamFirstCharMatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[0]++;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.Match(match.AsSpan())).IsEqualTo(new(false, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Match_ForStreamFullStream_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.Match(s_sourceBuffer.AsSpan())).IsEqualTo(new(true, s_sourceBuffer.Length, false));
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task Match_ForStreamLastCharMatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[byteCountToCheck - 1]++;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.Match(match.AsSpan())).IsEqualTo(new(false, c_defaultStreamBufferSize, false));
+        await Assert.That(stream.Position).IsEqualTo(c_defaultStreamBufferSize);
+    }
+
+    [Test]
+    public async Task Match_ForStreamMatchBiggerThanStream_MatchIsFalse()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.Match([..s_sourceBuffer, ..s_sourceBuffer])).IsEqualTo(new(false, s_sourceBuffer.Length, true));
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task Match_ForStreamPartialStream_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.Match(s_sourceBuffer.AsSpan(0, byteCountToCheck))).IsEqualTo(new(true, byteCountToCheck, false));
+        await Assert.That(stream.Position).IsEqualTo(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForFixedBufferEmptyMatch_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.MatchAsync(Memory<byte>.Empty)).IsEqualTo(new(true, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForFixedBufferFirstCharMatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[0]++;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.MatchAsync(match.AsMemory())).IsEqualTo(new(false, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForFixedBufferFullStream_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.MatchAsync(s_sourceBuffer.AsMemory())).IsEqualTo(new(true, s_sourceBuffer.Length, false));
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForFixedBufferLastCharMatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[byteCountToCheck - 1]++;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.MatchAsync(match.AsMemory())).IsEqualTo(new(false, 0, false)); ;
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForFixedBufferMatchBiggerThanStream_MatchIsFalse()
+    {
+        using MarshalStream stream = CreateForFixedBuffer();
+        List<byte> matchBytes = [..s_sourceBuffer, ..s_sourceBuffer];
+        await Assert.That(stream.MatchAsync(matchBytes.ToArray().AsMemory())).IsEqualTo(new(false, 0, true));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForFixedBufferPartialStream_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        using MarshalStream stream = CreateForFixedBuffer();
+        await Assert.That(stream.MatchAsync(s_sourceBuffer.AsMemory(0, byteCountToCheck))).IsEqualTo(new(true, byteCountToCheck, false));
+        await Assert.That(stream.Position).IsEqualTo(byteCountToCheck);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForStreamEmptyMatch_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.MatchAsync(Memory<byte>.Empty)).IsEqualTo(new(true, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForStreamFirstCharMatch_MatchIsFalse()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[0]++;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.MatchAsync(match.AsMemory())).IsEqualTo(new(false, 0, false));
+        await Assert.That(stream.Position).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForStreamFullStream_MatchIsTrue()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.MatchAsync(s_sourceBuffer.AsMemory())).IsEqualTo(new(true, s_sourceBuffer.Length, false));
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForStreamLastCharMatch_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        byte[] match = s_sourceBuffer.AsSpan(0, byteCountToCheck).ToArray();
+        match[byteCountToCheck - 1]++;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.MatchAsync(match.AsMemory())).IsEqualTo(new(false, c_defaultStreamBufferSize, false));
+        await Assert.That(stream.Position).IsEqualTo(c_defaultStreamBufferSize);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForStreamMatchBiggerThanStream_MatchIsFalse()
+    {
+        using MarshalStream stream = CreateForStream(true, true, true);
+        List<byte> matchBytes = [..s_sourceBuffer, ..s_sourceBuffer];
+        await Assert.That(stream.MatchAsync(matchBytes.ToArray().AsMemory())).IsEqualTo(new(false, s_sourceBuffer.Length, true));
+        await Assert.That(stream.Position).IsEqualTo(s_sourceBuffer.Length);
+    }
+
+    [Test]
+    public async Task MatchAsync_ForStreamPartialStream_MatchIsTrue()
+    {
+        int byteCountToCheck = 4;
+        using MarshalStream stream = CreateForStream(true, true, true);
+        await Assert.That(stream.MatchAsync(s_sourceBuffer.AsMemory(0, byteCountToCheck))).IsEqualTo(new(true, byteCountToCheck, false));
+        await Assert.That(stream.Position).IsEqualTo(byteCountToCheck);
+    }
+
+    #endregion Match
 
     #region Length
 
@@ -2051,6 +2695,8 @@ internal class MarshalStreamTest
     #endregion WriteString
 }
 
+#region CustomMemoryStream
+
 file class CustomMemoryStream : MemoryStream
 {
     private bool _canRead;
@@ -2146,3 +2792,38 @@ file class CustomMemoryStream : MemoryStream
     public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
         _canWrite ? base.WriteAsync(buffer, cancellationToken) : throw new NotSupportedException("Cannot write.");
 }
+
+#endregion CustomMemoryStream
+
+#region CustomProcessor
+
+file class CustomProcessor(Action<ReadOnlySpan<byte>> process) : IMarshalStreamProcessor
+{
+    public void Process(ReadOnlySpan<byte> bytes) => process(bytes);
+}
+
+#endregion CustomProcessor
+
+#region ValidationProcessor
+
+file class ValidationProcessor(Memory<byte> expectedBytes) : IMarshalStreamProcessor
+{
+    private bool _foundMatch = false;
+
+    public void Process(ReadOnlySpan<byte> bytes)
+    {
+        if (_foundMatch ||
+            bytes.Length > expectedBytes.Length ||
+            !bytes.SequenceEqual(expectedBytes.Span[..bytes.Length]))
+        {
+            _foundMatch = true;
+            return;
+        }
+
+        expectedBytes = expectedBytes[bytes.Length..];
+    }
+
+    public bool Success => !_foundMatch && expectedBytes.Length == 0;
+}
+
+#endregion ValidationProcessor

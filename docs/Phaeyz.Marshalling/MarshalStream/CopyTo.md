@@ -18,7 +18,7 @@ public override void CopyTo(Stream destination, int bufferSize)
 | ArgumentNullException | *destination* is `null`. |
 | ArgumentOutOfRangeException | *bufferSize* is negative. |
 | IOException | An I/O error occurred. |
-| NotSupportedException | The current stream is not readadble, or *destination* is not writable. |
+| NotSupportedException | The current stream is not readable, or *destination* is not writable. |
 | ObjectDisposedException | The stream is disposed. |
 
 ## See Also
