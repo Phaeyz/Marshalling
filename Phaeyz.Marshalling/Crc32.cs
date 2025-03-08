@@ -66,9 +66,13 @@ public struct Crc32
     /// <param name="value">
     /// The individual byte to update the CRC value with.
     /// </param>
-    public void Update(byte value)
+    /// <returns>
+    /// Returns the current instance.
+    /// </returns>
+    public Crc32 Update(byte value)
     {
         _value = s_table.Value.Span[(int)((_value ^ value) & 0xFF)] ^ (_value >> 8);
+        return this;
     }
 
     /// <summary>
@@ -77,19 +81,30 @@ public struct Crc32
     /// <param name="bytes">
     /// The series of bytes to update the CRC value with.
     /// </param>
-    public void Update(ReadOnlySpan<byte> bytes)
+    /// <returns>
+    /// Returns the current instance.
+    /// </returns>
+    public Crc32 Update(ReadOnlySpan<byte> bytes)
     {
         ref byte bytesRef = ref MemoryMarshal.GetReference(bytes);
         for (int i = 0; i < bytes.Length; i++)
         {
             Update(Unsafe.Add(ref bytesRef, i));
         }
+        return this;
     }
 
     /// <summary>
     /// Resets the CRC back to a default state.
     /// </summary>
-    public void Reset() => _value = uint.MaxValue;
+    /// <returns>
+    /// Returns the current instance.
+    /// </returns>
+    public Crc32 Reset()
+    {
+        _value = uint.MaxValue;
+        return this;
+    }
 
     /// <summary>
     /// Gets the current CRC value.

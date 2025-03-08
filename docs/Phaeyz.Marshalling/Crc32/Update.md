@@ -3,12 +3,16 @@
 Updates the CRC value with an individual byte.
 
 ```csharp
-public void Update(byte value)
+public Crc32 Update(byte value)
 ```
 
 | parameter | description |
 | --- | --- |
 | value | The individual byte to update the CRC value with. |
+
+## Return Value
+
+Returns the current instance.
 
 ## See Also
 
@@ -22,12 +26,16 @@ public void Update(byte value)
 Updates the CRC value with a series of bytes.
 
 ```csharp
-public void Update(ReadOnlySpan<byte> bytes)
+public Crc32 Update(ReadOnlySpan<byte> bytes)
 ```
 
 | parameter | description |
 | --- | --- |
 | bytes | The series of bytes to update the CRC value with. |
+
+## Return Value
+
+Returns the current instance.
 
 ## See Also
 

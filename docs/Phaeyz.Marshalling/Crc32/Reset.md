@@ -3,8 +3,12 @@
 Resets the CRC back to a default state.
 
 ```csharp
-public void Reset()
+public Crc32 Reset()
 ```
+
+## Return Value
+
+Returns the current instance.
 
 ## See Also
 
